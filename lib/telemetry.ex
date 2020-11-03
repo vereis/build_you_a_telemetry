@@ -7,6 +7,10 @@ defmodule Telemetry do
   which causes any attached event handlers to be executed synchronously.
   """
 
+  alias Telemetry.HandlerTable
+
+  defdelegate attach(handler_id, event, function, opts), to: HandlerTable
+
   def execute(_event, _measurements, _metadata) do
     :ok
   end
