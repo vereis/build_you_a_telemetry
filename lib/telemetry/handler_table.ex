@@ -13,14 +13,17 @@ defmodule Telemetry.HandlerTable do
   end
 
   # == Top level APIs ==
+  @spec start_link(any()) :: {:ok, pid()} | {:error, reason :: any()} | :ignore
   def start_link(_args) do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
 
+  @spec attach(id :: String.t(), Telemetry.event(), function(), options :: keyword()) :: :ok
   def attach(id, event, function, options) do
     GenServer.call(__MODULE__, {:attach, {id, event, function, options}})
   end
 
+  @spec list_handlers(Telemetry.event()) :: list(function())
   def list_handlers(event) do
     GenServer.call(__MODULE__, {:list, event})
   end
