@@ -18,14 +18,20 @@ defmodule Telemetry.HandlerTable do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
 
-  @spec attach(id :: String.t(), Telemetry.event(), function(), options :: keyword()) :: :ok
-  def attach(id, event, function, options) do
-    GenServer.call(__MODULE__, {:attach, {id, event, function, options}})
+  @spec attach(handler_id :: String.t(), Telemetry.event(), function(), options :: keyword()) ::
+          :ok | {:error, :already_exists}
+  def attach(handler_id, event, function, options) do
+    GenServer.call(__MODULE__, {:attach, {handler_id, event, function, options}})
   end
 
   @spec list_handlers(Telemetry.event()) :: list(function())
   def list_handlers(event) do
     GenServer.call(__MODULE__, {:list, event})
+  end
+
+  @spec detach_handler(handler_id :: String.t(), Telemetry.event()) :: :ok | {:error, :not_found}
+  def detach_handler(handler_id, event) do
+    GenServer.call(__MODULE__, {:detach, {handler_id, event}})
   end
 
   # == Callbacks ==
@@ -37,18 +43,35 @@ defmodule Telemetry.HandlerTable do
   end
 
   @impl GenServer
-  def handle_call({:attach, {id, event, function, options}}, _from, %State{} = state) do
-    true = :ets.insert(state.table, {event, {id, function, options}})
-    {:reply, :ok, state}
+  def handle_call({:attach, {handler_id, event, function, options}}, _from, %State{} = state) do
+    case :ets.match(state.table, {event, {handler_id, :_, :_}}) do
+      [] ->
+        true = :ets.insert(state.table, {event, {handler_id, function, options}})
+        {:reply, :ok, state}
+
+      _duplicate_id ->
+        {:reply, {:error, :already_exists}, state}
+    end
   end
 
   @impl GenServer
   def handle_call({:list, event}, _from, %State{} = state) do
-    handler_functions =
-      Enum.map(:ets.lookup(state.table, event), fn {^event, {_id, function, _opts}} ->
-        function
+    response =
+      Enum.map(:ets.lookup(state.table, event), fn {^event, {handler_id, function, _opts}} ->
+        {handler_id, function}
       end)
 
-    {:reply, handler_functions, state}
+    {:reply, response, state}
+  end
+
+  @impl GenServer
+  def handle_call({:detach, {handler_id, event}}, _from, %State{} = state) do
+    case :ets.select_delete(state.table, [{{event, {handler_id, :_, :_}}, [], [true]}]) do
+      0 ->
+        {:reply, {:error, :not_found}, state}
+
+      _deleted_count ->
+        {:reply, :ok, state}
+    end
   end
 end

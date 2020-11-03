@@ -25,13 +25,31 @@ defmodule Telemetry.HandlerTableTest do
       assert length(:ets.tab2list(state.table)) == 1
     end
 
-    test "{:attach, _} supports adding multiple handlers to the same key in :ets table", %{
-      state: state
-    } do
-      for _ <- 1..5 do
+    test "{:attach, _} returns {:error, :already_exists} when trying to add duplicate handlers",
+         %{state: state} do
+      assert {:reply, :ok, _new_state} =
+               Telemetry.HandlerTable.handle_call(
+                 {:attach, {"test", [:test, :event], fn -> :ok end, nil}},
+                 nil,
+                 state
+               )
+
+      assert {:reply, {:error, :already_exists}, _new_state} =
+               Telemetry.HandlerTable.handle_call(
+                 {:attach, {"test", [:test, :event], fn -> :ok end, nil}},
+                 nil,
+                 state
+               )
+    end
+
+    test "{:attach, _} supports adding multiple handlers to the same key in :ets table if they have unique ids",
+         %{
+           state: state
+         } do
+      for n <- 1..5 do
         assert {:reply, :ok, _new_state} =
                  Telemetry.HandlerTable.handle_call(
-                   {:attach, {"test", [:test, :event], fn -> :ok end, nil}},
+                   {:attach, {"test_#{n}", [:test, :event], fn -> :ok end, nil}},
                    nil,
                    state
                  )
@@ -51,20 +69,50 @@ defmodule Telemetry.HandlerTableTest do
          %{
            state: state
          } do
-      for _ <- 1..5 do
+      for n <- 1..5 do
         assert {:reply, :ok, _new_state} =
                  Telemetry.HandlerTable.handle_call(
-                   {:attach, {"test", [:event], fn -> :ok end, nil}},
+                   {:attach, {"test_#{n}", [:event], fn -> :ok end, nil}},
                    nil,
                    state
                  )
       end
 
-      assert {:reply, returned_functions, _new_state} =
+      assert {:reply, response, _new_state} =
                Telemetry.HandlerTable.handle_call({:list, [:event]}, nil, state)
 
-      assert length(returned_functions) == 5
-      assert Enum.all?(returned_functions, &is_function/1)
+      assert length(response) == 5
+
+      assert Enum.all?(response, fn
+               {handler_id, function} when is_binary(handler_id) and is_function(function) -> true
+               _ -> false
+             end)
+    end
+
+    test "{:detach, {event, handler}} returns :ok when trying to add delete attached handler", %{
+      state: state
+    } do
+      assert {:reply, :ok, _new_state} =
+               Telemetry.HandlerTable.handle_call(
+                 {:attach, {"my-event", [:event], fn -> :ok end, nil}},
+                 nil,
+                 state
+               )
+
+      assert {:reply, :ok, _new_state} =
+               Telemetry.HandlerTable.handle_call({:detach, {"my-event", [:event]}}, nil, state)
+
+      assert Enum.empty?(:ets.tab2list(state.table))
+    end
+
+    test "{:detach, {event, handler}} returns {:error, :not_found} when trying to add delete unattached handler",
+         %{
+           state: state
+         } do
+      assert {:reply, {:error, :not_found}, _new_state} =
+               Telemetry.HandlerTable.handle_call({:detach, {"my-event", [:event]}}, nil, state)
+
+      assert Enum.empty?(:ets.tab2list(state.table))
     end
   end
 end
