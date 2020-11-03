@@ -1,7 +1,14 @@
 defmodule Telemetry.HandlerTable do
+  @moduledoc """
+  GenServer responsible for owning the ETS table that we use to persist
+  any event handlers registered for any given events.
+  """
+
   use GenServer
 
   defmodule State do
+    @moduledoc false
+
     defstruct table: nil
   end
 
