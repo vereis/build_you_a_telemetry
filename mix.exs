@@ -9,6 +9,9 @@ defmodule Telemetry.MixProject do
       elixir: "~> 1.10",
       elixirc_options: [warnings_as_errors: true],
       start_permanent: Mix.env() == :prod,
+      package: package(),
+      description: description(),
+      source_url: "https://github.com/vereis/build_you_a_telemetry",
       deps: deps(),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
@@ -28,11 +31,30 @@ defmodule Telemetry.MixProject do
   defp deps do
     [
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:ex_doc, "~> 0.14", only: :dev, runtime: false}
     ]
   end
 
   defp aliases do
     [lint: ["format --check-formatted --dry-run", "credo --strict", "dialyzer"]]
+  end
+
+  defp description() do
+    """
+    Example minimal re-implementation of the `:telemetry` library.
+
+    See project `README.md` for more details
+    """
+  end
+
+  defp package() do
+    [
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/vereis/build_you_a_telemetry",
+        "Homepage" => "https://cbailey.co.uk/posts/build_you_a_telemetry_for_such_learn"
+      }
+    ]
   end
 end
