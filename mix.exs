@@ -3,9 +3,11 @@ defmodule Telemetry.MixProject do
 
   def project do
     [
+      aliases: aliases(),
       app: :build_you_a_telemetry,
       version: "0.1.0",
       elixir: "~> 1.10",
+      elixirc_options: [warnings_as_errors: true],
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer: [
@@ -28,5 +30,9 @@ defmodule Telemetry.MixProject do
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
+  end
+
+  defp aliases do
+    [lint: ["format --check-formatted --dry-run", "credo --strict", "dialyzer"]]
   end
 end
