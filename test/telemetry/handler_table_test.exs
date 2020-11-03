@@ -39,5 +39,32 @@ defmodule Telemetry.HandlerTableTest do
 
       assert length(:ets.tab2list(state.table)) == 5
     end
+
+    test "{:list, [:event]} returns [] when no functions for event [:event] are attached", %{
+      state: state
+    } do
+      assert {:reply, [], _new_state} =
+               Telemetry.HandlerTable.handle_call({:list, [:event]}, nil, state)
+    end
+
+    test "{:list, [:event]} returns a list of functions when functions for event [:event] are attached",
+         %{
+           state: state
+         } do
+      for _ <- 1..5 do
+        assert {:reply, :ok, _new_state} =
+                 Telemetry.HandlerTable.handle_call(
+                   {:attach, {"test", [:event], fn -> :ok end, nil}},
+                   nil,
+                   state
+                 )
+      end
+
+      assert {:reply, returned_functions, _new_state} =
+               Telemetry.HandlerTable.handle_call({:list, [:event]}, nil, state)
+
+      assert length(returned_functions) == 5
+      assert Enum.all?(returned_functions, &is_function/1)
+    end
   end
 end

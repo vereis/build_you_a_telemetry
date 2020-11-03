@@ -11,6 +11,8 @@ defmodule Telemetry do
 
   defdelegate attach(handler_id, event, function, opts), to: HandlerTable
 
+  defdelegate list_handlers(event), to: HandlerTable
+
   def execute(_event, _measurements, _metadata) do
     :ok
   end
