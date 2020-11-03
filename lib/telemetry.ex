@@ -13,7 +13,10 @@ defmodule Telemetry do
 
   defdelegate list_handlers(event), to: HandlerTable
 
-  def execute(_event, _measurements, _metadata) do
+  def execute(event, measurements, metadata) do
+    for handler_function <- list_handlers(event),
+        do: handler_function.(event, measurements, metadata)
+
     :ok
   end
 end
