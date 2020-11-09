@@ -5,7 +5,7 @@ This repo presents a minimal implementation of a `:telemetry` clone in Elixir.
 You can view the [original implementation of the library here](https://github.com/beam-telemetry/telemetry).
 
 The intention behind this repo is the serve as an artefact one can follow along
-to alongside [this blog post]().
+to alongside [this blog post](https://cbailey.co.uk/posts/build_you_a_telemetry_for_such_learn).
 
 ## Installation
 
